@@ -88,7 +88,7 @@
   register: public_route_table
   tags: bootstrap
 
-- name: create vms
+- name: create vms (async)
   ec2:
     aws_access_key: "{{ ec2_access_key }}"
     aws_secret_key: "{{ ec2_secret_access_key }}"
@@ -107,6 +107,17 @@
       Name: "{{ item.name }}"
   with_items: "{{ vms }}"
   register: machines
+  async: 600
+  poll: 0
+  tags: bootstrap
+
+- name: wait for vm creation to finish
+  async_status:
+    jid: "{{ machines.ansible_job_id }}"
+  register: job_result
+  until: job_result.finished
+  retries: 1
+  with_items: vm_creation.results
   tags: bootstrap
 
 - name: set facts about vms
